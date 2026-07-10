@@ -25,8 +25,6 @@ for /f "delims=" %%a in ('type "%CONFIG_FILE%"') do (
     )
 )
 
-:: Remove leading/trailing spaces
-if defined SYSCFG_PATH set "SYSCFG_PATH=%SYSCFG_PATH: =%"
 set "SYSCFG_CLI=%SYSCFG_PATH%\sysconfig_cli.bat"
 
 :: Read SDK path from [MSPM0_SDK] section
@@ -42,7 +40,7 @@ for /f "delims=" %%a in ('type "%CONFIG_FILE%"') do (
         )
     )
 )
-if defined SDK_PATH set "SDK_PATH=%SDK_PATH: =%"
+:: SDK_PATH from ini is already clean (no spaces around =)
 
 :: Validate SYSCFG tool
 if not exist "%SYSCFG_CLI%" (
@@ -71,21 +69,21 @@ set PROJ_DIR=%PROJ_DIR:'=%
 set SYSCFG_FILE=%~2
 set SYSCFG_FILE=%SYSCFG_FILE:'=%
 
-:: Search for the directory containing the project's syscfg file
-set SYSCFG_DIR=%PROJ_DIR%
-set iter=0
-:syscfg_search_loop
-if exist %SYSCFG_DIR%\*.syscfg (
-    IF %SYSCFG_DIR:~-1%==\ SET SYSCFG_DIR=%SYSCFG_DIR:~0,-1%
-    goto syscfg_search_exit
-) else if %iter% geq 5 (
-    echo "Couldn't find syscfg file"
-    exit /b 1
-) else (
-    set /a iter=%iter%+1
-    set SYSCFG_DIR=%SYSCFG_DIR%..\
-    goto syscfg_search_loop
-)
-:syscfg_search_exit
+:: Search for the syscfg file — try direct path first, then recursive search
+set "FULL_SYSCFG_PATH=%PROJ_DIR%\%SYSCFG_FILE%"
+if exist "%FULL_SYSCFG_PATH%" goto syscfg_found
 
-%SYSCFG_CLI% -o "%SYSCFG_DIR%" -s "%SDK_PATH%\.metadata\product.json" --compiler keil "%SYSCFG_DIR%\%SYSCFG_FILE%"
+:: Fallback: recursively search from PROJ_DIR downward
+set FULL_SYSCFG_PATH=
+for /r "%PROJ_DIR%" %%f in ("%SYSCFG_FILE%") do (
+    if not defined FULL_SYSCFG_PATH set "FULL_SYSCFG_PATH=%%f"
+)
+if not defined FULL_SYSCFG_PATH (
+    echo Couldn't find %SYSCFG_FILE% under %PROJ_DIR%
+    exit /b 1
+)
+
+:syscfg_found
+for %%i in ("%FULL_SYSCFG_PATH%") do set "SYSCFG_DIR=%%~dpi"
+
+%SYSCFG_CLI% -o "%SYSCFG_DIR%" -s "%SDK_PATH%\.metadata\product.json" --compiler keil "%FULL_SYSCFG_PATH%"
