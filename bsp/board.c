@@ -1,5 +1,8 @@
 #include "board.h"
 
+volatile unsigned long tick_ms;
+volatile uint32_t start_time;
+
 /* ---------- SysTick ---------- */
 uint32_t Systick_getTick(void)
 {
@@ -39,28 +42,38 @@ void delay_ms(uint32_t ms)
         delay_us(1000);
 }
 
+void delay_1us(unsigned long __us) { delay_us(__us); }
+void delay_1ms(unsigned long ms)  { delay_ms(ms); }
+
 /* ---------- printf redirect via UART ---------- */
 #ifndef BOARD_NO_PRINTF
 
 #ifdef UART_0_INST
+
+#if !defined(__MICROLIB)
+#if (__ARMCLIB_VERSION <= 6000000)
+struct __FILE
+{
+    int handle;
+};
+#endif
+
+FILE __stdout;
+
+void _sys_exit(int x)
+{
+    x = x;
+}
+#endif
+
 int fputc(int ch, FILE *stream)
 {
     (void)stream;
-    while (DL_UART_isBusy(UART_0_INST));
-    DL_UART_Main_transmitDataBlocking(UART_0_INST, ch);
+    while (DL_UART_isBusy(UART_0_INST) == true);
+    DL_UART_Main_transmitData(UART_0_INST, ch);
     return ch;
 }
 
-int fputs(const char *restrict s, FILE *restrict stream)
-{
-    (void)stream;
-    uint16_t len = 0;
-    while (s[len] != '\0') {
-        DL_UART_Main_transmitDataBlocking(UART_0_INST, s[len]);
-        len++;
-    }
-    return len;
-}
 #endif /* UART_0_INST */
 
 #endif /* BOARD_NO_PRINTF */
