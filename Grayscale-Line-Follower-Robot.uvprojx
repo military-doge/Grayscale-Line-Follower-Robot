@@ -10,7 +10,7 @@
       <TargetName>Target 1</TargetName>
       <ToolsetNumber>0x4</ToolsetNumber>
       <ToolsetName>ARM-ADS</ToolsetName>
-      <pCCUsed>6190000::V6.19::ARMCLANG</pCCUsed>
+      <pCCUsed>6220000::V6.22::ARMCLANG</pCCUsed>
       <uAC6>1</uAC6>
       <TargetOption>
         <TargetCommonOption>
@@ -399,6 +399,16 @@
               <FileType>5</FileType>
               <FilePath>.\app\control.h</FilePath>
             </File>
+            <File>
+              <FileName>line_track.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\app\line_track.c</FilePath>
+            </File>
+            <File>
+              <FileName>line_track.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\app\line_track.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -468,6 +478,16 @@
               <FileName>encoder.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\bsp\encoder.h</FilePath>
+            </File>
+            <File>
+              <FileName>grayscale.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\bsp\grayscale.c</FilePath>
+            </File>
+            <File>
+              <FileName>grayscale.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\bsp\grayscale.h</FilePath>
             </File>
           </Files>
         </Group>

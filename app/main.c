@@ -3,6 +3,7 @@
 
 int Flag_Stop = 1;
 volatile uint32_t g_tick_10ms = 0;
+uint16_t g_sensor_data[GRAYSCALE_SENSOR_CHANNELS];
 
 void user_init(void)
 {
@@ -16,6 +17,9 @@ void user_init(void)
 	NVIC_EnableIRQ(ENCODERB_INT_IRQN);
 	NVIC_ClearPendingIRQ(TIMER_0_INST_INT_IRQN);
 	NVIC_EnableIRQ(TIMER_0_INST_INT_IRQN);
+
+	Grayscale_Sensor_Init();
+	Line_Tracking_Init();
 
 	Flag_Stop = 1;
 	MotorA.Target_Encoder = MotorB.Target_Encoder = 0.0f;
@@ -36,6 +40,13 @@ void user_main(void)
 			OLED_ShowNumber(40, 20, (uint32_t)(MotorB.Current_Encoder * 100), 4, 12);
 			OLED_ShowString(0, 40, (const uint8_t *)"Status:");
 			OLED_ShowString(60, 40, Flag_Stop ? (const uint8_t *)"STOP" : (const uint8_t *)"RUN ");
+
+			{
+				uint8_t i;
+				for (i = 0; i < GRAYSCALE_SENSOR_CHANNELS; i++) {
+					OLED_ShowNumber(i * 16, 52, g_sensor_data[i], 1, 12);
+				}
+			}
 			OLED_Refresh_Gram();
 			last_display_tick = g_tick_10ms;
 		}
@@ -65,10 +76,19 @@ void TIMER_0_INST_IRQHandler(void)
 
 	switch (DL_TimerG_getPendingInterrupt(TIMER_0_INST)) {
 		case DL_TIMERG_IIDX_ZERO:
+			Grayscale_Sensor_Read_All(g_sensor_data);
 			LED_Flash(100);
 			Key();
 			Get_Velocity_From_Encoder(Get_Encoder_countA, Get_Encoder_countB);
 			Get_Encoder_countA = Get_Encoder_countB = 0;
+
+			if (Flag_Stop) {
+				MotorA.Target_Encoder = 0.0f;
+				MotorB.Target_Encoder = 0.0f;
+			} else {
+				Line_Tracking_Update(g_sensor_data);
+			}
+
 			// Incremental PI control for left/right motors
 			MotorA.Motor_Pwm = Incremental_PI_Left(MotorA.Current_Encoder, MotorA.Target_Encoder);
 			MotorB.Motor_Pwm = Incremental_PI_Right(MotorB.Current_Encoder, MotorB.Target_Encoder);
