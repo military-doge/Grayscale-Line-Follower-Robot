@@ -2,6 +2,7 @@
 #include "oled.h"
 
 int Flag_Stop = 1;
+volatile uint32_t g_tick_10ms = 0;
 
 void user_init(void)
 {
@@ -23,14 +24,11 @@ void user_init(void)
 void user_main(void)
 {
 	static uint32_t last_display_tick = 0;
-	uint32_t now;
 
 	while (1)
 	{
-		now = Systick_getTick();
-
-		// Update OLED display every 500ms
-		if (((now - last_display_tick) & SysTickMAX_COUNT) >= SysTick_MS(500))
+		// Update OLED display every 500ms (50 * 10ms)
+		if (g_tick_10ms - last_display_tick >= 50)
 		{
 			OLED_ShowString(0, 0, (const uint8_t *)"MA_V:");
 			OLED_ShowNumber(40, 0, (uint32_t)(MotorA.Current_Encoder * 100), 4, 12);
@@ -39,7 +37,7 @@ void user_main(void)
 			OLED_ShowString(0, 40, (const uint8_t *)"Status:");
 			OLED_ShowString(60, 40, Flag_Stop ? (const uint8_t *)"STOP" : (const uint8_t *)"RUN ");
 			OLED_Refresh_Gram();
-			last_display_tick = now;
+			last_display_tick = g_tick_10ms;
 		}
 	}
 }
@@ -63,6 +61,8 @@ int main(void)
 // 10ms timer interrupt
 void TIMER_0_INST_IRQHandler(void)
 {
+	g_tick_10ms++;
+
 	switch (DL_TimerG_getPendingInterrupt(TIMER_0_INST)) {
 		case DL_TIMERG_IIDX_ZERO:
 			LED_Flash(100);

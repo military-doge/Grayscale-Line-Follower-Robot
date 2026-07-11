@@ -78,7 +78,7 @@ void Key(void)
 		Flag_Stop=!Flag_Stop;
 		if(!Flag_Stop)
 		{
-			MotorA.Target_Encoder = MotorB.Target_Encoder = 1.0f;
+			MotorA.Target_Encoder = MotorB.Target_Encoder = 0.02f;
 		}
 		else
 		{
