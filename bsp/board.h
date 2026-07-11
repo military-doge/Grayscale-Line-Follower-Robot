@@ -7,7 +7,7 @@
 #define SysTickMAX_COUNT  0xFFFFFF
 
 /* SysTick frequency (Hz) */
-#define SysTickFre        32000000
+#define SysTickFre        80000000
 
 /* Convert milliseconds/microseconds to SysTick ticks */
 #define SysTick_MS(x)     (((SysTickFre) / 1000U) * (uint32_t)(x))

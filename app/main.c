@@ -8,7 +8,6 @@ int main(void)
 {
     SYSCFG_DL_init();
     OLED_Init();
-    printf("OLED Init OK!\r\n");
 
     uint32_t counter = 0;
 
@@ -22,3 +21,4 @@ int main(void)
         delay_ms(10);
     }
 }
+

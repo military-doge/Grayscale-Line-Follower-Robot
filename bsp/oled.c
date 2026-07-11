@@ -22,6 +22,7 @@ void OLED_WR_Byte(uint8_t dat, uint8_t cmd)
         OLED_RS_Set();
     else
         OLED_RS_Clr();
+    delay_cycles(10);
 
     for (uint8_t i = 0; i < 8; i++) {
         OLED_SCLK_Clr();
@@ -29,7 +30,9 @@ void OLED_WR_Byte(uint8_t dat, uint8_t cmd)
             OLED_SDIN_Set();
         else
             OLED_SDIN_Clr();
+        delay_cycles(20);
         OLED_SCLK_Set();
+        delay_cycles(20);
         dat <<= 1;
     }
     OLED_RS_Set();
