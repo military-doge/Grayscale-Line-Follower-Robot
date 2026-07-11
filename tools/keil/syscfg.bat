@@ -69,21 +69,21 @@ set PROJ_DIR=%PROJ_DIR:'=%
 set SYSCFG_FILE=%~2
 set SYSCFG_FILE=%SYSCFG_FILE:'=%
 
-:: Search for the syscfg file — try direct path first, then recursive search
-set "FULL_SYSCFG_PATH=%PROJ_DIR%\%SYSCFG_FILE%"
-if exist "%FULL_SYSCFG_PATH%" goto syscfg_found
-
-:: Fallback: recursively search from PROJ_DIR downward
-set FULL_SYSCFG_PATH=
-for /r "%PROJ_DIR%" %%f in ("%SYSCFG_FILE%") do (
-    if not defined FULL_SYSCFG_PATH set "FULL_SYSCFG_PATH=%%f"
+:: Search for the directory containing the project's syscfg file
+:: First try the exact file path relative to project dir
+if exist "%PROJ_DIR%%SYSCFG_FILE%" (
+    for %%f in ("%PROJ_DIR%%SYSCFG_FILE%") do set SYSCFG_DIR=%%~dpf
+    IF "!SYSCFG_DIR:~-1!"=="\" SET "SYSCFG_DIR=!SYSCFG_DIR:~0,-1!"
+    goto syscfg_search_exit
 )
-if not defined FULL_SYSCFG_PATH (
-    echo Couldn't find %SYSCFG_FILE% under %PROJ_DIR%
-    exit /b 1
+:: Fall back to recursive search from project dir
+for /r "%PROJ_DIR%" %%f in (*.syscfg) do (
+    set "SYSCFG_DIR=%%~dpf"
+    IF "!SYSCFG_DIR:~-1!"=="\" SET "SYSCFG_DIR=!SYSCFG_DIR:~0,-1!"
+    goto syscfg_search_exit
 )
+echo "Couldn't find syscfg file"
+exit /b 1
+:syscfg_search_exit
 
-:syscfg_found
-for %%i in ("%FULL_SYSCFG_PATH%") do set "SYSCFG_DIR=%%~dpi"
-
-%SYSCFG_CLI% -o "%SYSCFG_DIR%" -s "%SDK_PATH%\.metadata\product.json" --compiler keil "%FULL_SYSCFG_PATH%"
+%SYSCFG_CLI% -o "%SYSCFG_DIR%" -s "%SDK_PATH%\.metadata\product.json" --compiler keil "%PROJ_DIR%%SYSCFG_FILE%"
