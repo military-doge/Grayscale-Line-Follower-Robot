@@ -3,11 +3,12 @@
 
 #include <stdint.h>
 
-#define LINE_TRACK_KP     700.0f
-#define LINE_TRACK_KI     0.05f
-#define LINE_TRACK_KD     30.0f
+#define LINE_TRACK_KP     30.0f
+#define LINE_TRACK_KI     0.0f
+#define LINE_TRACK_KD     100.0f
 
-#define ACTIVE_LEVEL      1
+#define ACTIVE_LEVEL         1
+#define ERROR_FILTER_ALPHA   0.5f   /* low-pass filter for error smoothing */
 
 #define LINE_BASE_SPEED   0.10f
 #define STEERING_GAIN     0.000065f    /* half_wheelbase / 1000 = 0.065 / 1000 */
