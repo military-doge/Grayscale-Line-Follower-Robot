@@ -53,6 +53,7 @@ typedef enum
 #include "control.h"
 #include "line_track.h"
 #include "grayscale.h"
+#include "jy62.h"
 
 #define ABS(a)      (a>0 ? a:(-a))
 

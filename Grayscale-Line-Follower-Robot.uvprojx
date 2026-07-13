@@ -409,6 +409,16 @@
               <FileType>5</FileType>
               <FilePath>.\app\line_track.h</FilePath>
             </File>
+            <File>
+              <FileName>gyro_hold.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\app\gyro_hold.c</FilePath>
+            </File>
+            <File>
+              <FileName>gyro_hold.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\app\gyro_hold.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -488,6 +498,16 @@
               <FileName>grayscale.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\bsp\grayscale.h</FilePath>
+            </File>
+            <File>
+              <FileName>jy62.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\bsp\jy62.c</FilePath>
+            </File>
+            <File>
+              <FileName>jy62.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\bsp\jy62.h</FilePath>
             </File>
           </Files>
         </Group>

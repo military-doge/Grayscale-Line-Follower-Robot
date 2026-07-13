@@ -1,6 +1,6 @@
 #include "board.h"
 #include "oled.h"
-#include <string.h>
+#include "gyro_hold.h"
 
 int Flag_Stop = 1;
 volatile uint32_t g_tick_10ms = 0;
@@ -21,6 +21,13 @@ void user_init(void)
 
 	Grayscale_Sensor_Init();
 	Line_Tracking_Init();
+	JY62_Init();
+	Gyro_Hold_Init();
+
+	NVIC_ClearPendingIRQ(UART_1_INST_INT_IRQN);
+	NVIC_EnableIRQ(UART_1_INST_INT_IRQN);
+	DL_UART_Main_disableLoopbackMode(UART_1_INST);
+	DL_UART_Main_enableInterrupt(UART_1_INST, DL_UART_MAIN_INTERRUPT_RX);
 
 	Flag_Stop = 1;
 	MotorA.Target_Encoder = MotorB.Target_Encoder = 0.0f;
@@ -35,64 +42,50 @@ void user_main(void)
 		// Update OLED display every 100ms (10 * 10ms)
 		if (g_tick_10ms - last_display_tick >= 10)
 		{
-			memset(OLED_GRAM, 0, 128 * 8 * sizeof(u8)); // GRAM清零，防止残影
+		static uint8_t display_page = 0;
+		display_page = !display_page;
 
-			// Line 1: Mode + Error
-			if (Flag_Stop)
-				OLED_ShowString(0, 0, (const uint8_t *)"STOP ");
-			else
-			{
-				OLED_ShowString(0, 0, (const uint8_t *)"TRACK");
-				OLED_ShowString(52, 0, (const uint8_t *)"E:");
-				OLED_ShowNumber(68, 0, (int)Tracking_Get_Last_Error(), 4, 10);
-			}
+		if (display_page)
+		{
+			/* Page 0: Speed + Status + Sensor */
+			OLED_ShowString(0, 0, (const uint8_t *)"MA_V:");
+			OLED_ShowNumber(40, 0, (uint32_t)(MotorA.Current_Encoder * 100), 4, 12);
+			OLED_ShowString(0, 20, (const uint8_t *)"MB_V:");
+			OLED_ShowNumber(40, 20, (uint32_t)(MotorB.Current_Encoder * 100), 4, 12);
+			OLED_ShowString(0, 40, (const uint8_t *)"Status:");
+			OLED_ShowString(60, 40, Flag_Stop ? (const uint8_t *)"STOP" : (const uint8_t *)"RUN ");
 
-			// Line 2: PWM L/R
-			OLED_ShowString(0, 10, (const uint8_t *)"PWM");
-			OLED_ShowString(30, 10, (const uint8_t *)"L:");
-			OLED_ShowNumber(46, 10, myabs((int)(MotorA.Motor_Pwm)), 4, 12);
-			OLED_ShowString(82, 10, (const uint8_t *)"R:");
-			OLED_ShowNumber(98, 10, myabs((int)(MotorB.Motor_Pwm)), 4, 12);
-
-			// Line 3: Left motor target + current speed (mm/s)
-			OLED_ShowString(0, 20, (const uint8_t *)"L");
-			if ((MotorA.Target_Encoder * 1000) < 0)
-				OLED_ShowString(16, 20, (const uint8_t *)"-"),
-				OLED_ShowNumber(26, 20, myabs((int)(MotorA.Target_Encoder * 1000)), 4, 12);
-			else
-				OLED_ShowString(16, 20, (const uint8_t *)"+"),
-				OLED_ShowNumber(26, 20, myabs((int)(MotorA.Target_Encoder * 1000)), 4, 12);
-
-			if (MotorA.Current_Encoder < 0)
-				OLED_ShowString(60, 20, (const uint8_t *)"-");
-			else
-				OLED_ShowString(60, 20, (const uint8_t *)"+");
-			OLED_ShowNumber(68, 20, myabs((int)(MotorA.Current_Encoder * 1000)), 4, 12);
-			OLED_ShowString(96, 20, (const uint8_t *)"mm/s");
-
-			// Line 4: Right motor target + current speed (mm/s)
-			OLED_ShowString(0, 30, (const uint8_t *)"R");
-			if ((MotorB.Target_Encoder * 1000) < 0)
-				OLED_ShowString(16, 30, (const uint8_t *)"-"),
-				OLED_ShowNumber(26, 30, myabs((int)(MotorB.Target_Encoder * 1000)), 4, 12);
-			else
-				OLED_ShowString(16, 30, (const uint8_t *)"+"),
-				OLED_ShowNumber(26, 30, myabs((int)(MotorB.Target_Encoder * 1000)), 4, 12);
-
-			if (MotorB.Current_Encoder < 0)
-				OLED_ShowString(60, 30, (const uint8_t *)"-");
-			else
-				OLED_ShowString(60, 30, (const uint8_t *)"+");
-			OLED_ShowNumber(68, 30, myabs((int)(MotorB.Current_Encoder * 1000)), 4, 12);
-			OLED_ShowString(96, 30, (const uint8_t *)"mm/s");
-
-			// Line 5: Sensor values
 			{
 				uint8_t i;
 				for (i = 0; i < GRAYSCALE_SENSOR_CHANNELS; i++) {
-					OLED_ShowNumber(i * 16, 42, g_sensor_data[i], 1, 12);
+					OLED_ShowNumber(i * 16, 52, g_sensor_data[i], 1, 12);
 				}
 			}
+		}
+		else
+		{
+			/* Page 1: Gyro debug info */
+			int wz_int  = (int)(JY62_Get_AngularVelocityZ() * 10.0f);
+			int yaw_int = (int)(JY62_Get_Yaw() * 10.0f);
+
+			OLED_ShowString(0, 0, (const uint8_t *)"Gyro Debug");
+			OLED_ShowString(0, 20, (const uint8_t *)"wz:");
+			if (wz_int < 0) {
+				OLED_ShowString(24, 20, (const uint8_t *)"-");
+				OLED_ShowNumber(32, 20, (uint32_t)(-wz_int), 4, 12);
+			} else {
+				OLED_ShowNumber(24, 20, (uint32_t)(wz_int), 4, 12);
+			}
+
+			OLED_ShowString(0, 40, (const uint8_t *)"yaw:");
+			if (yaw_int < 0) {
+				OLED_ShowString(32, 40, (const uint8_t *)"-");
+				OLED_ShowNumber(40, 40, (uint32_t)(-yaw_int), 4, 12);
+			} else {
+				OLED_ShowNumber(32, 40, (uint32_t)(yaw_int), 4, 12);
+			}
+		}
+
 			OLED_Refresh_Gram();
 			last_display_tick = g_tick_10ms;
 		}
@@ -148,6 +141,18 @@ void TIMER_0_INST_IRQHandler(void)
 			Set_PWM(MotorA.Motor_Pwm, MotorB.Motor_Pwm);
 			break;
 		}
+		default:
+			break;
+	}
+}
+
+// UART1 RX interrupt for JY62 gyroscope
+void UART_1_INST_IRQHandler(void)
+{
+	switch (DL_UART_getPendingInterrupt(UART_1_INST)) {
+		case DL_UART_IIDX_RX:
+			JY62_UART_RX_ISR(DL_UART_Main_receiveData(UART_1_INST));
+			break;
 		default:
 			break;
 	}

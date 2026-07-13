@@ -1,5 +1,6 @@
 #include "line_track.h"
 #include "control.h"
+#include "gyro_hold.h"
 
 int g_line_error = 0;
 
@@ -9,13 +10,17 @@ static const int8_t g_track_weights[8] = {
     TRACK_W4, TRACK_W5, TRACK_W6, TRACK_W7
 };
 
-/* 控制状态变量 */
-static int g_prev_error = 0;
+/* Control state */
+static int   g_prev_error = 0;
+static uint8_t g_curve_count  = 0;   /* Consecutive curve detection counter */
+static uint8_t g_was_straight = 0;   /* Previous straight-line state */
 
 void Line_Tracking_Init(void)
 {
-    g_line_error = 0;
-    g_prev_error = 0;
+    g_line_error   = 0;
+    g_prev_error   = 0;
+    g_curve_count  = 0;
+    g_was_straight = 0;
 }
 
 /**************************************************************************
@@ -82,19 +87,70 @@ void Line_Tracking_Update(uint16_t *sensor_data)
     error = g_line_error;
     abs_error = (error > 0) ? error : -error;
 
-    /* Step 2: 微分计算 */
-    derivative = (float)(error - g_prev_error);
-    g_prev_error = error;
+    if (sum == 0 || sum == 8)
+    {
+        /* === Line lost / crossroads → pure gyro heading hold === */
+        float gyro_correction = Gyro_Hold_Get_Correction();
+        g_was_straight = 0;
+        MotorA.Target_Encoder = TRACK_BASE_SPEED + gyro_correction;
+        MotorB.Target_Encoder = TRACK_BASE_SPEED - gyro_correction;
+    }
+    else
+    {
+        /* === Straight-line entry detection → record yaw reference === */
+        {
+            uint8_t is_straight = (abs_error <= TRACK_DEADZONE);
+            if (is_straight && !g_was_straight)
+                Gyro_Hold_Set_Reference();
+            g_was_straight = is_straight;
+        }
 
-    /* Step 3: 非线性PD */
-    correction = TRACK_KP * (float)error * (float)abs_error / 7.0f
-               + TRACK_KD * derivative;
+        /* === Curve detection with debounce === */
+        if (sensor_data[0] == ACTIVE_LEVEL || sensor_data[7] == ACTIVE_LEVEL
+            || abs_error >= TRACK_CURVE_THRESHOLD)
+        {
+            if (g_curve_count < 255) g_curve_count++;
+        }
+        else
+        {
+            g_curve_count = 0;
+        }
+        is_curve = (g_curve_count >= 2);
 
-    /* Step 4: 差速转向 */
-    MotorA.Target_Encoder = TRACK_BASE_SPEED + correction;
-    MotorB.Target_Encoder = TRACK_BASE_SPEED - correction;
+        /* === Derivative of error === */
+        derivative = (float)(error - g_prev_error);
+        g_prev_error = error;
 
-    /* Step 5: 限幅 */
+        /* === Nonlinear P + D, dual-mode control === */
+        if (is_curve)
+        {
+            correction = TRACK_KP * (float)error * (float)abs_error / 7.0f
+                       + TRACK_KD * derivative;
+            base_speed = TRACK_CURVE_SPEED;
+        }
+        else
+        {
+            if (abs_error <= TRACK_DEADZONE)
+            {
+                MotorA.Target_Encoder = TRACK_BASE_SPEED;
+                MotorB.Target_Encoder = TRACK_BASE_SPEED;
+                return;
+            }
+            correction = TRACK_KP * (float)error * (float)abs_error / 7.0f
+                       + TRACK_KD * derivative;
+            base_speed = TRACK_BASE_SPEED;
+        }
+
+        /* === Gyro-assisted correction === */
+        correction -= TRACK_KGYRO * JY62_Get_AngularVelocityZ();
+        correction += Gyro_Hold_Get_Correction();
+
+        /* === Differential steering === */
+        MotorA.Target_Encoder = base_speed + correction;
+        MotorB.Target_Encoder = base_speed - correction;
+    }
+
+    /* === Speed clamp === */
     if (MotorA.Target_Encoder > TRACK_SPEED_MAX)  MotorA.Target_Encoder = TRACK_SPEED_MAX;
     if (MotorA.Target_Encoder < -TRACK_SPEED_MAX) MotorA.Target_Encoder = -TRACK_SPEED_MAX;
     if (MotorB.Target_Encoder > TRACK_SPEED_MAX)  MotorB.Target_Encoder = TRACK_SPEED_MAX;

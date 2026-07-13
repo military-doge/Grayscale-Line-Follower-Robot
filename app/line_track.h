@@ -33,6 +33,10 @@
 
 #define TRACK_INTEGRAL_LIMIT 200.0f   /* 积分限幅 */
 
+/* Gyro-assisted control coefficients (tune from small values) */
+#define TRACK_KGYRO   0.0005f   /* wz angular velocity damping (°/s -> m/s) */
+#define TRACK_KYAW    0.005f    /* Yaw heading hold P gain (° -> m/s) */
+
 extern int g_line_error;
 
 void Line_Tracking_Init(void);
