@@ -1,5 +1,6 @@
 #include "board.h"
 #include "oled.h"
+#include <string.h>
 
 int Flag_Stop = 1;
 volatile uint32_t g_tick_10ms = 0;
@@ -31,20 +32,65 @@ void user_main(void)
 
 	while (1)
 	{
-		// Update OLED display every 500ms (50 * 10ms)
-		if (g_tick_10ms - last_display_tick >= 50)
+		// Update OLED display every 100ms (10 * 10ms)
+		if (g_tick_10ms - last_display_tick >= 10)
 		{
-			OLED_ShowString(0, 0, (const uint8_t *)"MA_V:");
-			OLED_ShowNumber(40, 0, (uint32_t)(MotorA.Current_Encoder * 100), 4, 12);
-			OLED_ShowString(0, 20, (const uint8_t *)"MB_V:");
-			OLED_ShowNumber(40, 20, (uint32_t)(MotorB.Current_Encoder * 100), 4, 12);
-			OLED_ShowString(0, 40, (const uint8_t *)"Status:");
-			OLED_ShowString(60, 40, Flag_Stop ? (const uint8_t *)"STOP" : (const uint8_t *)"RUN ");
+			memset(OLED_GRAM, 0, 128 * 8 * sizeof(u8)); // GRAM清零，防止残影
 
+			// Line 1: Mode + Error
+			if (Flag_Stop)
+				OLED_ShowString(0, 0, (const uint8_t *)"STOP ");
+			else
+			{
+				OLED_ShowString(0, 0, (const uint8_t *)"TRACK");
+				OLED_ShowString(52, 0, (const uint8_t *)"E:");
+				OLED_ShowNumber(68, 0, (int)Tracking_Get_Last_Error(), 4, 10);
+			}
+
+			// Line 2: PWM L/R
+			OLED_ShowString(0, 10, (const uint8_t *)"PWM");
+			OLED_ShowString(30, 10, (const uint8_t *)"L:");
+			OLED_ShowNumber(46, 10, myabs((int)(MotorA.Motor_Pwm)), 4, 12);
+			OLED_ShowString(82, 10, (const uint8_t *)"R:");
+			OLED_ShowNumber(98, 10, myabs((int)(MotorB.Motor_Pwm)), 4, 12);
+
+			// Line 3: Left motor target + current speed (mm/s)
+			OLED_ShowString(0, 20, (const uint8_t *)"L");
+			if ((MotorA.Target_Encoder * 1000) < 0)
+				OLED_ShowString(16, 20, (const uint8_t *)"-"),
+				OLED_ShowNumber(26, 20, myabs((int)(MotorA.Target_Encoder * 1000)), 4, 12);
+			else
+				OLED_ShowString(16, 20, (const uint8_t *)"+"),
+				OLED_ShowNumber(26, 20, myabs((int)(MotorA.Target_Encoder * 1000)), 4, 12);
+
+			if (MotorA.Current_Encoder < 0)
+				OLED_ShowString(60, 20, (const uint8_t *)"-");
+			else
+				OLED_ShowString(60, 20, (const uint8_t *)"+");
+			OLED_ShowNumber(68, 20, myabs((int)(MotorA.Current_Encoder * 1000)), 4, 12);
+			OLED_ShowString(96, 20, (const uint8_t *)"mm/s");
+
+			// Line 4: Right motor target + current speed (mm/s)
+			OLED_ShowString(0, 30, (const uint8_t *)"R");
+			if ((MotorB.Target_Encoder * 1000) < 0)
+				OLED_ShowString(16, 30, (const uint8_t *)"-"),
+				OLED_ShowNumber(26, 30, myabs((int)(MotorB.Target_Encoder * 1000)), 4, 12);
+			else
+				OLED_ShowString(16, 30, (const uint8_t *)"+"),
+				OLED_ShowNumber(26, 30, myabs((int)(MotorB.Target_Encoder * 1000)), 4, 12);
+
+			if (MotorB.Current_Encoder < 0)
+				OLED_ShowString(60, 30, (const uint8_t *)"-");
+			else
+				OLED_ShowString(60, 30, (const uint8_t *)"+");
+			OLED_ShowNumber(68, 30, myabs((int)(MotorB.Current_Encoder * 1000)), 4, 12);
+			OLED_ShowString(96, 30, (const uint8_t *)"mm/s");
+
+			// Line 5: Sensor values
 			{
 				uint8_t i;
 				for (i = 0; i < GRAYSCALE_SENSOR_CHANNELS; i++) {
-					OLED_ShowNumber(i * 16, 52, g_sensor_data[i], 1, 12);
+					OLED_ShowNumber(i * 16, 42, g_sensor_data[i], 1, 12);
 				}
 			}
 			OLED_Refresh_Gram();
@@ -76,6 +122,8 @@ void TIMER_0_INST_IRQHandler(void)
 
 	switch (DL_TimerG_getPendingInterrupt(TIMER_0_INST)) {
 		case DL_TIMERG_IIDX_ZERO:
+		{
+			static int prev_stop = 1;
 			Grayscale_Sensor_Read_All(g_sensor_data);
 			LED_Flash(100);
 			Key();
@@ -85,7 +133,12 @@ void TIMER_0_INST_IRQHandler(void)
 			if (Flag_Stop) {
 				MotorA.Target_Encoder = 0.0f;
 				MotorB.Target_Encoder = 0.0f;
+				prev_stop = 1;
 			} else {
+				if (prev_stop) {
+					Tracking_Reset_PID();  // 启动时复位PID状态
+					prev_stop = 0;
+				}
 				Line_Tracking_Update(g_sensor_data);
 			}
 
@@ -94,6 +147,7 @@ void TIMER_0_INST_IRQHandler(void)
 			MotorB.Motor_Pwm = Incremental_PI_Right(MotorB.Current_Encoder, MotorB.Target_Encoder);
 			Set_PWM(MotorA.Motor_Pwm, MotorB.Motor_Pwm);
 			break;
+		}
 		default:
 			break;
 	}

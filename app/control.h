@@ -4,8 +4,8 @@
 #include "board.h"
 
 #define Frequency	100.0f			// 10ms sample period = 100Hz
-#define Perimeter	0.14765f        // Wheel circumference (m) = 47mm * PI
-#define Wheelspacing 0.13f          // Wheel spacing (m)
+#define Perimeter	0.2104867f      // Wheel circumference (m) = 67mm * PI
+#define Wheelspacing 0.1610f        // Wheel spacing (m)
 #define PI 3.1415926
 
 // Speed low-pass filter coefficient (0~1, lower = stronger filtering, 0.3~0.5 recommended)
