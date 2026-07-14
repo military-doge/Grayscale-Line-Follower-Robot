@@ -509,6 +509,16 @@
               <FileType>5</FileType>
               <FilePath>.\bsp\jy62.h</FilePath>
             </File>
+            <File>
+              <FileName>dma_rx.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\bsp\dma_rx.c</FilePath>
+            </File>
+            <File>
+              <FileName>dma_rx.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\bsp\dma_rx.h</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>

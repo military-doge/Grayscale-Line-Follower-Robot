@@ -29,7 +29,13 @@
 #define TRACK_KI             0.0f
 
 #define TRACK_BASE_SPEED     0.08f    /* 循迹速度 (m/s) */
+#define TRACK_CURVE_SPEED    0.05f    /* 弯道速度 (m/s) */
 #define TRACK_SPEED_MAX      0.35f    /* 最高速度限幅 (m/s) */
+
+#define TRACK_DEADZONE       1        /* 直道死区 (|error| <= 此值视为直道) */
+#define TRACK_CURVE_THRESHOLD 4       /* 弯道判断阈值 (|error| >= 此值视为弯道) */
+
+#define ACTIVE_LEVEL         1        /* 传感器检测到黑线的电平 */
 
 #define TRACK_INTEGRAL_LIMIT 200.0f   /* 积分限幅 */
 

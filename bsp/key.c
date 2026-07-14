@@ -1,4 +1,5 @@
 #include "key.h"
+#include "gyro_hold.h"
 
 
 /**************************************************************************
@@ -75,13 +76,15 @@ void Key(void)
 	tmp=click_N_Double(50);
 	if(tmp==1)
 	{
-		Flag_Stop=!Flag_Stop;
-		if(!Flag_Stop)
+		/* Start gyro-straight mode only from stopped state */
+		if (Flag_Stop)
 		{
-			MotorA.Target_Encoder = MotorB.Target_Encoder = 0.02f;
+			Gyro_Straight_Start();
+			Flag_Stop = 0;
 		}
 		else
 		{
+			Flag_Stop = 1;
 			MotorA.Target_Encoder = MotorB.Target_Encoder = 0.0f;
 		}
 	}

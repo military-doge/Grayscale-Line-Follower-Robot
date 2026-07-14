@@ -8,15 +8,17 @@
  * after SysConfig regeneration.  Remove this block once SysConfig
  * generates the matching defines.
  */
-#ifndef UART_1_INST
-#define UART_1_INST            UART1
-#define UART_1_INST_INT_IRQN   UART1_INT_IRQn
-#define UART_1_INST_IRQHandler UART1_IRQHandler
+#ifndef UART_2_INST
+#define UART_2_INST            UART2
+#define UART_2_INST_INT_IRQN   UART2_INT_IRQn
+#define UART_2_INST_IRQHandler UART2_IRQHandler
 #endif
 
 void JY62_Init(void);
 float JY62_Get_AngularVelocityZ(void);
 float JY62_Get_Yaw(void);
+float JY62_Get_Roll(void);
+float JY62_Get_Pitch(void);
 uint8_t JY62_Is_Data_Ready(void);
 void JY62_UART_RX_ISR(uint8_t byte);
 

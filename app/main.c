@@ -1,6 +1,7 @@
 #include "board.h"
 #include "oled.h"
 #include "gyro_hold.h"
+#include "dma_rx.h"
 
 int Flag_Stop = 1;
 volatile uint32_t g_tick_10ms = 0;
@@ -24,10 +25,16 @@ void user_init(void)
 	JY62_Init();
 	Gyro_Hold_Init();
 
-	NVIC_ClearPendingIRQ(UART_1_INST_INT_IRQN);
-	NVIC_EnableIRQ(UART_1_INST_INT_IRQN);
-	DL_UART_Main_disableLoopbackMode(UART_1_INST);
-	DL_UART_Main_enableInterrupt(UART_1_INST, DL_UART_MAIN_INTERRUPT_RX);
+	DL_UART_Main_disable(UART_2_INST);
+	DL_UART_Main_disableLoopbackMode(UART_2_INST);
+	DL_UART_Main_enable(UART_2_INST);
+
+	/* Flush any stale data in RX FIFO before starting DMA */
+	while (!DL_UART_isRXFIFOEmpty(UART_2_INST)) {
+		DL_UART_receiveData(UART_2_INST);
+	}
+
+	DMA_RX_Init();
 
 	Flag_Stop = 1;
 	MotorA.Target_Encoder = MotorB.Target_Encoder = 0.0f;
@@ -42,49 +49,33 @@ void user_main(void)
 		// Update OLED display every 100ms (10 * 10ms)
 		if (g_tick_10ms - last_display_tick >= 10)
 		{
-		static uint8_t display_page = 0;
-		display_page = !display_page;
+			int offset_val = (int)(Gyro_Hold_Get_Error() * 10.0f);
+			int pitch_val  = (int)(JY62_Get_Pitch() * 10.0f);
+			int roll_val   = (int)(JY62_Get_Roll() * 10.0f);
 
-		if (display_page)
-		{
-			/* Page 0: Speed + Status + Sensor */
-			OLED_ShowString(0, 0, (const uint8_t *)"MA_V:");
-			OLED_ShowNumber(40, 0, (uint32_t)(MotorA.Current_Encoder * 100), 4, 12);
-			OLED_ShowString(0, 20, (const uint8_t *)"MB_V:");
-			OLED_ShowNumber(40, 20, (uint32_t)(MotorB.Current_Encoder * 100), 4, 12);
-			OLED_ShowString(0, 40, (const uint8_t *)"Status:");
-			OLED_ShowString(60, 40, Flag_Stop ? (const uint8_t *)"STOP" : (const uint8_t *)"RUN ");
-
-			{
-				uint8_t i;
-				for (i = 0; i < GRAYSCALE_SENSOR_CHANNELS; i++) {
-					OLED_ShowNumber(i * 16, 52, g_sensor_data[i], 1, 12);
-				}
-			}
-		}
-		else
-		{
-			/* Page 1: Gyro debug info */
-			int wz_int  = (int)(JY62_Get_AngularVelocityZ() * 10.0f);
-			int yaw_int = (int)(JY62_Get_Yaw() * 10.0f);
-
-			OLED_ShowString(0, 0, (const uint8_t *)"Gyro Debug");
-			OLED_ShowString(0, 20, (const uint8_t *)"wz:");
-			if (wz_int < 0) {
-				OLED_ShowString(24, 20, (const uint8_t *)"-");
-				OLED_ShowNumber(32, 20, (uint32_t)(-wz_int), 4, 12);
+			OLED_ShowString(0, 0, (const uint8_t *)"Offset:");
+			if (offset_val < 0) {
+				OLED_ShowString(48, 0, (const uint8_t *)"-");
+				OLED_ShowNumber(56, 0, (uint32_t)(-offset_val), 4, 12);
 			} else {
-				OLED_ShowNumber(24, 20, (uint32_t)(wz_int), 4, 12);
+				OLED_ShowNumber(48, 0, (uint32_t)(offset_val), 4, 12);
 			}
 
-			OLED_ShowString(0, 40, (const uint8_t *)"yaw:");
-			if (yaw_int < 0) {
-				OLED_ShowString(32, 40, (const uint8_t *)"-");
-				OLED_ShowNumber(40, 40, (uint32_t)(-yaw_int), 4, 12);
+			OLED_ShowString(0, 20, (const uint8_t *)"Pitch:");
+			if (pitch_val < 0) {
+				OLED_ShowString(40, 20, (const uint8_t *)"-");
+				OLED_ShowNumber(48, 20, (uint32_t)(-pitch_val), 4, 12);
 			} else {
-				OLED_ShowNumber(32, 40, (uint32_t)(yaw_int), 4, 12);
+				OLED_ShowNumber(40, 20, (uint32_t)(pitch_val), 4, 12);
 			}
-		}
+
+			OLED_ShowString(0, 40, (const uint8_t *)"Roll :");
+			if (roll_val < 0) {
+				OLED_ShowString(40, 40, (const uint8_t *)"-");
+				OLED_ShowNumber(48, 40, (uint32_t)(-roll_val), 4, 12);
+			} else {
+				OLED_ShowNumber(40, 40, (uint32_t)(roll_val), 4, 12);
+			}
 
 			OLED_Refresh_Gram();
 			last_display_tick = g_tick_10ms;
@@ -118,7 +109,8 @@ void TIMER_0_INST_IRQHandler(void)
 		{
 			static int prev_stop = 1;
 			Grayscale_Sensor_Read_All(g_sensor_data);
-			LED_Flash(100);
+			DMA_RX_Process();
+			// LED_Flash(100);
 			Key();
 			Get_Velocity_From_Encoder(Get_Encoder_countA, Get_Encoder_countB);
 			Get_Encoder_countA = Get_Encoder_countB = 0;
@@ -146,12 +138,12 @@ void TIMER_0_INST_IRQHandler(void)
 	}
 }
 
-// UART1 RX interrupt for JY62 gyroscope
-void UART_1_INST_IRQHandler(void)
+// UART2 interrupt — RX handled by DMA, keep stub
+void UART_2_INST_IRQHandler(void)
 {
-	switch (DL_UART_getPendingInterrupt(UART_1_INST)) {
+	switch (DL_UART_getPendingInterrupt(UART_2_INST)) {
 		case DL_UART_IIDX_RX:
-			JY62_UART_RX_ISR(DL_UART_Main_receiveData(UART_1_INST));
+			/* DMA handles data transfer */
 			break;
 		default:
 			break;

@@ -23,8 +23,10 @@ static volatile uint8_t  g_frame_type  = 0;
 static volatile uint8_t  g_buf[8];
 static volatile uint8_t  g_checksum;
 
-static volatile float    g_wz  = 0.0f;
-static volatile float    g_yaw = 0.0f;
+static volatile float    g_wz   = 0.0f;
+static volatile float    g_roll = 0.0f;
+static volatile float    g_pitch = 0.0f;
+static volatile float    g_yaw  = 0.0f;
 static volatile uint8_t  g_data_ok = 0;
 
 void JY62_Init(void)
@@ -34,6 +36,8 @@ void JY62_Init(void)
     g_frame_type = 0;
     g_checksum   = 0;
     g_wz         = 0.0f;
+    g_roll       = 0.0f;
+    g_pitch      = 0.0f;
     g_yaw        = 0.0f;
     g_data_ok    = 0;
 }
@@ -46,6 +50,16 @@ float JY62_Get_AngularVelocityZ(void)
 float JY62_Get_Yaw(void)
 {
     return g_yaw;
+}
+
+float JY62_Get_Roll(void)
+{
+    return g_roll;
+}
+
+float JY62_Get_Pitch(void)
+{
+    return g_pitch;
 }
 
 uint8_t JY62_Is_Data_Ready(void)
@@ -104,9 +118,13 @@ void JY62_UART_RX_ISR(uint8_t byte)
                 break;
 
             case FRAME_ANGLE:
-                /* g_buf[4]=YawL, g_buf[5]=YawH */
+                /* Data[0..1]=Roll, Data[2..3]=Pitch, Data[4..5]=Yaw */
+                raw = ((int16_t)g_buf[1] << 8) | g_buf[0];
+                g_roll  = (float)raw / SCALE_DIV * ANGLE_SCALE;
+                raw = ((int16_t)g_buf[3] << 8) | g_buf[2];
+                g_pitch = (float)raw / SCALE_DIV * ANGLE_SCALE;
                 raw = ((int16_t)g_buf[5] << 8) | g_buf[4];
-                g_yaw = (float)raw / SCALE_DIV * ANGLE_SCALE;
+                g_yaw   = (float)raw / SCALE_DIV * ANGLE_SCALE;
                 break;
 
             case FRAME_ACCEL:

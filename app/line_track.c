@@ -56,8 +56,8 @@ void Line_Tracking_Update(uint16_t *sensor_data)
     int weighted_sum = 0;
     int sum = 0;
     int error, abs_error;
-    float correction, derivative;
-    uint8_t i;
+    float correction, derivative, base_speed;
+    uint8_t i, is_curve;
 
     /* Step 1: 加权平均法计算偏差 */
     for (i = 0; i < 8; i++)
