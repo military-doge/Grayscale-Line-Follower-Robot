@@ -1,6 +1,7 @@
 #include "board.h"
 #include "oled.h"
 #include "gyro_hold.h"
+#include "jy62.h"
 #include "dma_rx.h"
 
 int Flag_Stop = 1;
@@ -34,7 +35,7 @@ void user_init(void)
 		DL_UART_receiveData(UART_2_INST);
 	}
 
-	DMA_RX_Init();
+	DMA_RX_Init(JY62_UART_RX_ISR);
 
 	Flag_Stop = 1;
 	MotorA.Target_Encoder = MotorB.Target_Encoder = 0.0f;
@@ -49,32 +50,14 @@ void user_main(void)
 		// Update OLED display every 100ms (10 * 10ms)
 		if (g_tick_10ms - last_display_tick >= 10)
 		{
-			int offset_val = (int)(Gyro_Hold_Get_Error() * 10.0f);
-			int pitch_val  = (int)(JY62_Get_Pitch() * 10.0f);
-			int roll_val   = (int)(JY62_Get_Roll() * 10.0f);
+			int offset_val = (int)(Gyro_Hold_Get_Error());
 
-			OLED_ShowString(0, 0, (const uint8_t *)"Offset:");
+			OLED_ShowString(0, 2, (const uint8_t *)"Yaw");
 			if (offset_val < 0) {
-				OLED_ShowString(48, 0, (const uint8_t *)"-");
-				OLED_ShowNumber(56, 0, (uint32_t)(-offset_val), 4, 12);
+				OLED_ShowString(30, 2, (const uint8_t *)"-");
+				OLED_ShowNumber(38, 2, (uint32_t)(-offset_val), 4, 12);
 			} else {
-				OLED_ShowNumber(48, 0, (uint32_t)(offset_val), 4, 12);
-			}
-
-			OLED_ShowString(0, 20, (const uint8_t *)"Pitch:");
-			if (pitch_val < 0) {
-				OLED_ShowString(40, 20, (const uint8_t *)"-");
-				OLED_ShowNumber(48, 20, (uint32_t)(-pitch_val), 4, 12);
-			} else {
-				OLED_ShowNumber(40, 20, (uint32_t)(pitch_val), 4, 12);
-			}
-
-			OLED_ShowString(0, 40, (const uint8_t *)"Roll :");
-			if (roll_val < 0) {
-				OLED_ShowString(40, 40, (const uint8_t *)"-");
-				OLED_ShowNumber(48, 40, (uint32_t)(-roll_val), 4, 12);
-			} else {
-				OLED_ShowNumber(40, 40, (uint32_t)(roll_val), 4, 12);
+				OLED_ShowNumber(30, 2, (uint32_t)(offset_val), 4, 12);
 			}
 
 			OLED_Refresh_Gram();
@@ -87,10 +70,8 @@ int main(void)
 {
 	SYSCFG_DL_init();
 	OLED_Init();
-	OLED_ShowString(0, 0, (const uint8_t *)"GRAYSCALE ROBOT");
-	OLED_ShowString(0, 20, (const uint8_t *)"Init OK");
+	OLED_Clear();
 	OLED_Refresh_Gram();
-	delay_ms(500);
 
 	user_init();
 	while (1)
@@ -111,7 +92,18 @@ void TIMER_0_INST_IRQHandler(void)
 			Grayscale_Sensor_Read_All(g_sensor_data);
 			DMA_RX_Process();
 			// LED_Flash(100);
-			Key();
+			{
+				KeyEvent ke = Key();
+				if (ke == KEY_EVENT_CLICK) {
+					if (Flag_Stop) {
+						Gyro_Straight_Start();
+						Flag_Stop = 0;
+					} else {
+						Flag_Stop = 1;
+						MotorA.Target_Encoder = MotorB.Target_Encoder = 0.0f;
+					}
+				}
+			}
 			Get_Velocity_From_Encoder(Get_Encoder_countA, Get_Encoder_countB);
 			Get_Encoder_countA = Get_Encoder_countB = 0;
 

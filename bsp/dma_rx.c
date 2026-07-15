@@ -1,6 +1,5 @@
 #include "ti_msp_dl_config.h"
 #include "dma_rx.h"
-#include "jy62.h"
 
 #define DMA_RX_BUF_SIZE  256
 
@@ -9,8 +8,9 @@ static uint8_t  dma_rx_buf[DMA_RX_BUF_SIZE] __attribute__((aligned(32)));
 static uint32_t dma_read_idx;
 static uint32_t dma_last_remaining;
 static uint32_t dma_byte_count;
+static dma_rx_byte_cb_t g_rx_callback;
 
-void DMA_RX_Init(void)
+void DMA_RX_Init(dma_rx_byte_cb_t rx_callback)
 {
     DL_DMA_Config dmaCfg = {
         .trigger       = DMA_UART2_RX_TRIG,
@@ -45,6 +45,7 @@ void DMA_RX_Init(void)
     dma_read_idx      = 0;
     dma_last_remaining = DMA_RX_BUF_SIZE;
     dma_byte_count    = 0;
+    g_rx_callback     = rx_callback;
 }
 
 void DMA_RX_Process(void)
@@ -66,7 +67,7 @@ void DMA_RX_Process(void)
     if (remaining > dma_last_remaining) {
         /* Process tail of buffer first */
         while (dma_read_idx < DMA_RX_BUF_SIZE) {
-            JY62_UART_RX_ISR(dma_rx_buf[dma_read_idx++]);
+            g_rx_callback(dma_rx_buf[dma_read_idx++]);
             dma_byte_count++;
         }
         dma_read_idx = 0;
@@ -77,7 +78,7 @@ void DMA_RX_Process(void)
 
     /* Process new bytes */
     while (dma_read_idx < write_idx) {
-        JY62_UART_RX_ISR(dma_rx_buf[dma_read_idx++]);
+        g_rx_callback(dma_rx_buf[dma_read_idx++]);
         dma_byte_count++;
     }
 
@@ -88,7 +89,7 @@ void DMA_RX_Process(void)
         /* Flush any last bytes that arrived during disable */
         write_idx = DMA_RX_BUF_SIZE - DL_DMA_getTransferSize(DMA, DMA_CH_0_TRIG);
         while (dma_read_idx < write_idx) {
-            JY62_UART_RX_ISR(dma_rx_buf[dma_read_idx++]);
+            g_rx_callback(dma_rx_buf[dma_read_idx++]);
             dma_byte_count++;
         }
 

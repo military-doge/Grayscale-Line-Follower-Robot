@@ -1,5 +1,4 @@
 #include "key.h"
-#include "gyro_hold.h"
 
 
 /**************************************************************************
@@ -70,22 +69,13 @@ u8 Long_Press(void)
 }
 
 
-void Key(void)
+KeyEvent Key(void)
 {
 	u8 tmp;
-	tmp=click_N_Double(50);
-	if(tmp==1)
-	{
-		/* Start gyro-straight mode only from stopped state */
-		if (Flag_Stop)
-		{
-			Gyro_Straight_Start();
-			Flag_Stop = 0;
-		}
-		else
-		{
-			Flag_Stop = 1;
-			MotorA.Target_Encoder = MotorB.Target_Encoder = 0.0f;
-		}
-	}
+	tmp = click_N_Double(50);
+	if (tmp == 1)
+		return KEY_EVENT_CLICK;
+	if (tmp == 2)
+		return KEY_EVENT_DOUBLE;
+	return KEY_EVENT_NONE;
 }

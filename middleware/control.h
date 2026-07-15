@@ -4,8 +4,8 @@
 #include "board.h"
 
 #define Frequency	100.0f			// 10ms sample period = 100Hz
-#define Perimeter	0.2104867f      // Wheel circumference (m) = 67mm * PI
-#define Wheelspacing 0.1610f        // Wheel spacing (m)
+#define Perimeter	0.1507964f      // Wheel circumference (m) = 48mm * PI
+#define Wheelspacing 0.1300f        // Wheel spacing (m)
 #define PI 3.1415926
 
 // Speed low-pass filter coefficient (0~1, lower = stronger filtering, 0.3~0.5 recommended)
@@ -18,7 +18,7 @@
 // Encoder parameters (adjust to match actual hardware)
 #define ENCODER_LINES  	13       // Encoder lines per revolution
 #define MULTIPLY_FACTOR 2       // 2x quadrature (both edges)
-#define GEAR_RATIO   	28      // Gear ratio 28:1
+#define GEAR_RATIO   	20      // Gear ratio 20:1
 
 // Encoder raw data struct
 typedef struct

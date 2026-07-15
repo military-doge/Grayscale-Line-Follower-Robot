@@ -389,36 +389,6 @@
               <FileType>1</FileType>
               <FilePath>.\app\main.c</FilePath>
             </File>
-            <File>
-              <FileName>control.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\app\control.c</FilePath>
-            </File>
-            <File>
-              <FileName>control.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\app\control.h</FilePath>
-            </File>
-            <File>
-              <FileName>line_track.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\app\line_track.c</FilePath>
-            </File>
-            <File>
-              <FileName>line_track.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\app\line_track.h</FilePath>
-            </File>
-            <File>
-              <FileName>gyro_hold.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\app\gyro_hold.c</FilePath>
-            </File>
-            <File>
-              <FileName>gyro_hold.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\app\gyro_hold.h</FilePath>
-            </File>
           </Files>
         </Group>
         <Group>
@@ -500,16 +470,6 @@
               <FilePath>.\bsp\grayscale.h</FilePath>
             </File>
             <File>
-              <FileName>jy62.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\bsp\jy62.c</FilePath>
-            </File>
-            <File>
-              <FileName>jy62.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\bsp\jy62.h</FilePath>
-            </File>
-            <File>
               <FileName>dma_rx.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\bsp\dma_rx.c</FilePath>
@@ -523,6 +483,48 @@
         </Group>
         <Group>
           <GroupName>middleware</GroupName>
+          <Files>
+            <File>
+              <FileName>control.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\middleware\control.c</FilePath>
+            </File>
+            <File>
+              <FileName>control.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\middleware\control.h</FilePath>
+            </File>
+            <File>
+              <FileName>line_track.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\middleware\line_track.c</FilePath>
+            </File>
+            <File>
+              <FileName>line_track.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\middleware\line_track.h</FilePath>
+            </File>
+            <File>
+              <FileName>gyro_hold.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\middleware\gyro_hold.c</FilePath>
+            </File>
+            <File>
+              <FileName>gyro_hold.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\middleware\gyro_hold.h</FilePath>
+            </File>
+            <File>
+              <FileName>jy62.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\middleware\jy62.c</FilePath>
+            </File>
+            <File>
+              <FileName>jy62.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\middleware\jy62.h</FilePath>
+            </File>
+          </Files>
         </Group>
         <Group>
           <GroupName>core</GroupName>
