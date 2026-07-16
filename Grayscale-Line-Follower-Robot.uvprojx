@@ -495,16 +495,6 @@
               <FilePath>.\middleware\control.h</FilePath>
             </File>
             <File>
-              <FileName>line_track.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\middleware\line_track.c</FilePath>
-            </File>
-            <File>
-              <FileName>line_track.h</FileName>
-              <FileType>5</FileType>
-              <FilePath>.\middleware\line_track.h</FilePath>
-            </File>
-            <File>
               <FileName>gyro_hold.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\middleware\gyro_hold.c</FilePath>
@@ -523,6 +513,16 @@
               <FileName>jy62.h</FileName>
               <FileType>5</FileType>
               <FilePath>.\middleware\jy62.h</FilePath>
+            </File>
+            <File>
+              <FileName>task_planner.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\middleware\task_planner.c</FilePath>
+            </File>
+            <File>
+              <FileName>task_planner.h</FileName>
+              <FileType>5</FileType>
+              <FilePath>.\middleware\task_planner.h</FilePath>
             </File>
           </Files>
         </Group>

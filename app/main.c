@@ -3,10 +3,11 @@
 #include "gyro_hold.h"
 #include "jy62.h"
 #include "dma_rx.h"
+#include "task_planner.h"
 
 int Flag_Stop = 1;
 volatile uint32_t g_tick_10ms = 0;
-uint16_t g_sensor_data[GRAYSCALE_SENSOR_CHANNELS];
+volatile uint16_t g_sensor_data[GRAYSCALE_SENSOR_CHANNELS];
 
 void user_init(void)
 {
@@ -20,11 +21,12 @@ void user_init(void)
 	NVIC_EnableIRQ(ENCODERB_INT_IRQN);
 	NVIC_ClearPendingIRQ(TIMER_0_INST_INT_IRQN);
 	NVIC_EnableIRQ(TIMER_0_INST_INT_IRQN);
+	DL_TimerG_startCounter(TIMER_0_INST);
 
 	Grayscale_Sensor_Init();
-	Line_Tracking_Init();
 	JY62_Init();
 	Gyro_Hold_Init();
+	Task_Planner_Init();
 
 	DL_UART_Main_disable(UART_2_INST);
 	DL_UART_Main_disableLoopbackMode(UART_2_INST);
@@ -51,13 +53,26 @@ void user_main(void)
 		if (g_tick_10ms - last_display_tick >= 10)
 		{
 			int offset_val = (int)(Gyro_Hold_Get_Error());
+			TaskState st = Task_Planner_Get_State();
 
-			OLED_ShowString(0, 2, (const uint8_t *)"Yaw");
+			{
+				uint8_t i, cnt = 0;
+				for (i = 0; i < GRAYSCALE_SENSOR_CHANNELS; i++) {
+					if (g_sensor_data[i]) cnt++;
+				}
+
+				OLED_ShowString(0, 0, (const uint8_t *)"S:");
+				OLED_ShowNumber(16, 0, (uint32_t)st, 1, 12);
+				OLED_ShowString(30, 0, (const uint8_t *)"C:");
+				OLED_ShowNumber(46, 0, cnt, 1, 12);
+			}
+
+			OLED_ShowString(0, 16, (const uint8_t *)"Yaw");
 			if (offset_val < 0) {
-				OLED_ShowString(30, 2, (const uint8_t *)"-");
-				OLED_ShowNumber(38, 2, (uint32_t)(-offset_val), 4, 12);
+				OLED_ShowString(30, 16, (const uint8_t *)"-");
+				OLED_ShowNumber(38, 16, (uint32_t)(-offset_val), 4, 12);
 			} else {
-				OLED_ShowNumber(30, 2, (uint32_t)(offset_val), 4, 12);
+				OLED_ShowNumber(30, 16, (uint32_t)(offset_val), 4, 12);
 			}
 
 			OLED_Refresh_Gram();
@@ -88,36 +103,19 @@ void TIMER_0_INST_IRQHandler(void)
 	switch (DL_TimerG_getPendingInterrupt(TIMER_0_INST)) {
 		case DL_TIMERG_IIDX_ZERO:
 		{
-			static int prev_stop = 1;
 			Grayscale_Sensor_Read_All(g_sensor_data);
 			DMA_RX_Process();
 			// LED_Flash(100);
 			{
 				KeyEvent ke = Key();
 				if (ke == KEY_EVENT_CLICK) {
-					if (Flag_Stop) {
-						Gyro_Straight_Start();
-						Flag_Stop = 0;
-					} else {
-						Flag_Stop = 1;
-						MotorA.Target_Encoder = MotorB.Target_Encoder = 0.0f;
-					}
+					Task_Planner_On_Key();
 				}
 			}
 			Get_Velocity_From_Encoder(Get_Encoder_countA, Get_Encoder_countB);
 			Get_Encoder_countA = Get_Encoder_countB = 0;
 
-			if (Flag_Stop) {
-				MotorA.Target_Encoder = 0.0f;
-				MotorB.Target_Encoder = 0.0f;
-				prev_stop = 1;
-			} else {
-				if (prev_stop) {
-					Tracking_Reset_PID();  // 启动时复位PID状态
-					prev_stop = 0;
-				}
-				Line_Tracking_Update(g_sensor_data);
-			}
+			Task_Planner_Update(g_sensor_data);
 
 			// Incremental PI control for left/right motors
 			MotorA.Motor_Pwm = Incremental_PI_Left(MotorA.Current_Encoder, MotorA.Target_Encoder);

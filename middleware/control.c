@@ -85,6 +85,7 @@ int Incremental_PI_Left (float Encoder, float Target)
 	if(abs_bias < PI_DEADBAND)
 	{
 		Last_bias = Bias;  // Still update bias for smooth recovery on exit
+		if (Target == 0.0f) { Pwm = 0.0f; }  // Force stop when target is zero
 		return (int)Pwm;
 	}
 
@@ -110,6 +111,7 @@ int Incremental_PI_Right (float Encoder, float Target)
 	if(abs_bias < PI_DEADBAND)
 	{
 		Last_bias = Bias;  // Still update bias for smooth recovery on exit
+		if (Target == 0.0f) { Pwm = 0.0f; }  // Force stop when target is zero
 		return (int)Pwm;
 	}
 
