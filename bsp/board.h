@@ -51,6 +51,7 @@ typedef enum
 #include "motor.h"
 #include "encoder.h"
 #include "control.h"
+#include "line_track.h"
 #include "grayscale.h"
 #include "jy62.h"
 

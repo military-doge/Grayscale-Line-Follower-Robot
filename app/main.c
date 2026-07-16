@@ -24,6 +24,7 @@ void user_init(void)
 	DL_TimerG_startCounter(TIMER_0_INST);
 
 	Grayscale_Sensor_Init();
+	Line_Tracking_Init();
 	JY62_Init();
 	Gyro_Hold_Init();
 	Task_Planner_Init();
@@ -65,6 +66,13 @@ void user_main(void)
 				OLED_ShowNumber(16, 0, (uint32_t)st, 1, 12);
 				OLED_ShowString(30, 0, (const uint8_t *)"C:");
 				OLED_ShowNumber(46, 0, cnt, 1, 12);
+				OLED_ShowString(60, 0, (const uint8_t *)"Er:");
+				if (g_line_error < 0) {
+					OLED_ShowString(84, 0, (const uint8_t *)"-");
+					OLED_ShowNumber(92, 0, (uint32_t)(-g_line_error), 2, 12);
+				} else {
+					OLED_ShowNumber(84, 0, (uint32_t)(g_line_error), 2, 12);
+				}
 			}
 
 			OLED_ShowString(0, 16, (const uint8_t *)"Yaw");
