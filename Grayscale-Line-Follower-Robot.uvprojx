@@ -10,7 +10,7 @@
       <TargetName>Target 1</TargetName>
       <ToolsetNumber>0x4</ToolsetNumber>
       <ToolsetName>ARM-ADS</ToolsetName>
-      <pCCUsed>6190000::V6.19::ARMCLANG</pCCUsed>
+      <pCCUsed>6220000::V6.22::ARMCLANG</pCCUsed>
       <uAC6>1</uAC6>
       <TargetOption>
         <TargetCommonOption>
@@ -473,6 +473,13 @@
         </Group>
         <Group>
           <GroupName>middleware</GroupName>
+          <Files>
+            <File>
+              <FileName>ble_bridge.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\middleware\ble_bridge.c</FilePath>
+            </File>
+          </Files>
         </Group>
         <Group>
           <GroupName>core</GroupName>

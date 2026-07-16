@@ -27,6 +27,7 @@ const TIMER   = scripting.addModule("/ti/driverlib/TIMER", {}, false);
 const TIMER1  = TIMER.addInstance();
 const UART    = scripting.addModule("/ti/driverlib/UART", {}, false);
 const UART1   = UART.addInstance();
+const UART2   = UART.addInstance();
 
 /**
  * Write custom configuration values to the imported modules.
@@ -153,6 +154,20 @@ UART1.peripheral.txPin.$assign = "PA10";
 UART1.txPinConfig.$name        = "ti_driverlib_gpio_GPIOPinGeneric2";
 UART1.rxPinConfig.$name        = "ti_driverlib_gpio_GPIOPinGeneric3";
 
+UART2.$name                      = "UART_1";
+UART2.enabledInterrupts          = ["DMA_DONE_RX"];
+UART2.interruptPriority          = "1";
+UART2.enabledDMARXTriggers       = "DL_UART_DMA_INTERRUPT_RX";
+UART2.peripheral.$assign         = "UART1";
+UART2.peripheral.rxPin.$assign   = "PB7";
+UART2.peripheral.txPin.$assign   = "PB6";
+UART2.txPinConfig.$name          = "ti_driverlib_gpio_GPIOPinGeneric8";
+UART2.rxPinConfig.$name          = "ti_driverlib_gpio_GPIOPinGeneric9";
+UART2.DMA_CHANNEL_RX.$name       = "DMA_CH1";
+UART2.DMA_CHANNEL_RX.addressMode = "f2b";
+UART2.DMA_CHANNEL_RX.srcLength   = "BYTE";
+UART2.DMA_CHANNEL_RX.dstLength   = "BYTE";
+
 /**
  * Pinmux solution for unlocked pins/peripherals. This ensures that minor changes to the automatic solver in a future
  * version of the tool will not impact the pinmux you originally saw.  These lines can be completely deleted in order to
@@ -162,3 +177,5 @@ Board.peripheral.$suggestSolution          = "DEBUGSS";
 Board.peripheral.swclkPin.$suggestSolution = "PA20";
 Board.peripheral.swdioPin.$suggestSolution = "PA19";
 UART1.peripheral.$suggestSolution          = "UART0";
+UART2.peripheral.$suggestSolution                = "UART1";
+UART2.DMA_CHANNEL_RX.peripheral.$suggestSolution = "DMA_CH1";

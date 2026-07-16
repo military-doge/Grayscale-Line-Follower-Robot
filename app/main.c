@@ -1,5 +1,6 @@
 #include "board.h"
 #include "oled.h"
+#include "ble_bridge.h"
 
 int Flag_Stop = 1;
 volatile uint32_t g_tick_10ms = 0;
@@ -19,6 +20,8 @@ void user_init(void)
 
 	Flag_Stop = 1;
 	MotorA.Target_Encoder = MotorB.Target_Encoder = 0.0f;
+
+	ble_bridge_init();
 }
 
 void user_main(void)
@@ -27,6 +30,8 @@ void user_main(void)
 
 	while (1)
 	{
+		ble_bridge_poll();
+
 		// Update OLED display every 500ms (50 * 10ms)
 		if (g_tick_10ms - last_display_tick >= 50)
 		{
