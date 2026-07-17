@@ -6,12 +6,12 @@
 /* 8-channel symmetric sensor weights (ch0~ch7 left to right) */
 #define TRACK_W0  (-7)
 #define TRACK_W1  (-5)
-#define TRACK_W2  (-3)
-#define TRACK_W3  (-1)
+#define TRACK_W2  (-4)
+#define TRACK_W3  (-2)
 #define TRACK_W4  (1)
 #define TRACK_W5  (3)
-#define TRACK_W6  (5)
-#define TRACK_W7  (7)
+#define TRACK_W6  (6)
+#define TRACK_W7  (8)
 
 /*
  * 循迹控制参数 (非线性PD控制)
@@ -26,8 +26,8 @@
 /* 微分系数 */
 #define TRACK_KD             0.004f   /* 微分系数 */
 
-#define TRACK_BASE_SPEED     0.12f    /* 循迹速度 (m/s) */
-#define TRACK_CURVE_SPEED    0.08f    /* 弯道速度 (m/s) */
+#define TRACK_BASE_SPEED     0.18f    /* 循迹速度 (m/s) */
+#define TRACK_CURVE_SPEED    0.12f    /* 弯道速度 (m/s) */
 #define TRACK_SPEED_MAX      0.35f    /* 最高速度限幅 (m/s) */
 
 #define TRACK_DEADZONE       1        /* 直道死区 (|error| <= 此值视为直道) */

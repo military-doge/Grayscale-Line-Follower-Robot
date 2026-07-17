@@ -120,10 +120,13 @@ void TIMER_0_INST_IRQHandler(void)
 					Task_Planner_On_Key();
 				}
 			}
-			Get_Velocity_From_Encoder(Get_Encoder_countA, Get_Encoder_countB);
-			Get_Encoder_countA = Get_Encoder_countB = 0;
-
-			Task_Planner_Update(g_sensor_data);
+			{
+				int enc_a = Get_Encoder_countA;
+				int enc_b = Get_Encoder_countB;
+				Get_Velocity_From_Encoder(enc_a, enc_b);
+				Get_Encoder_countA = Get_Encoder_countB = 0;
+				Task_Planner_Update(g_sensor_data, enc_a, enc_b);
+			}
 
 			// Incremental PI control for left/right motors
 			MotorA.Motor_Pwm = Incremental_PI_Left(MotorA.Current_Encoder, MotorA.Target_Encoder);
